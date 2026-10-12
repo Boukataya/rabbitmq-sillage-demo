@@ -1,0 +1,16 @@
+server:
+  port: 8080
+spring:
+  application:
+    name: rabbitmq-sillage-demo
+  rabbitmq:
+    host: localhost
+    port: 5672
+    username: demo
+    password: demo
+    listener:
+      simple:
+        prefetch: 1
+logging:
+  level:
+    fr.demo.rabbitmq: INFO

@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Sillage / RabbitMQ — Démonstration</title>
+  <style>
+    :root{font-family:system-ui,-apple-system,Segoe UI,sans-serif;color:#182538;background:#f5f7fb}
+    *{box-sizing:border-box}body{margin:0}main{max-width:1120px;padding:32px 20px;margin:auto}
+    h1{font-size:30px;letter-spacing:-.7px;margin:0 0 8px}h2{font-size:19px;margin:0 0 15px}
+    p{line-height:1.55;color:#506078}.sub{margin:0 0 30px}.cols{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+    .panel{background:#fff;border:1px solid #e0e6ef;border-radius:14px;padding:22px;min-width:0;margin-bottom:20px}
+    label{font-size:13px;font-weight:600;display:block;margin:12px 0 6px}input{width:100%;padding:11px 12px;border:1px solid #c8d3e0;border-radius:8px;font:inherit}
+    button,.link{border:0;border-radius:8px;background:#1766cb;color:#fff;padding:10px 14px;font-weight:600;cursor:pointer;font-size:13px}
+    button.secondary{background:#eaf1fb;color:#214c82}button.warning{background:#fff0df;color:#924b05}button.danger{background:#ffebed;color:#a22533}
+    button:hover{filter:brightness(.95)}.actions{display:flex;gap:7px;flex-wrap:wrap;margin-top:12px}
+    .document{border-top:1px solid #e7edf5;padding:14px 0}.docname{font-weight:700}.small{font-size:12px;color:#607084;word-break:break-word}
+    .pill{border-radius:15px;background:#eaf3ff;color:#2f6095;padding:4px 9px;font-size:11px}
+    .flow{display:flex;align-items:center;justify-content:space-between;gap:9px;margin:18px 0;flex-wrap:wrap}
+    .node{background:#eff5ff;color:#1b4c80;border:1px solid #bcd6f5;padding:11px 12px;border-radius:9px;font-size:12px;font-weight:650;flex:1;text-align:center;min-width:100px}
+    .node.queue{background:#edf9f4;border-color:#bce7d0;color:#136344}.arrow{color:#64748b}
+    .bindings{list-style:none;padding:0;margin:0}.bindings li{padding:8px 0;border-bottom:1px solid #eff2f6;font-size:12px;overflow-wrap:anywhere;font-family:ui-monospace,SFMono-Regular,Consolas,monospace}
+    .event{padding:11px 0;border-bottom:1px solid #e9eef5}.event strong{display:block;font-size:12px;overflow-wrap:anywhere}.event code{display:block;font-size:11px;white-space:pre-wrap;overflow-wrap:anywhere;color:#4c5968;margin-top:4px}
+    .muted{color:#607084}.status{padding:12px;border-radius:8px;background:#eef6ff;color:#214d79;font-size:13px;margin-bottom:18px}
+    .note{background:#fff6df;padding:13px;border-radius:8px;font-size:12px;color:#815a19;line-height:1.5}
+    @media(max-width:760px){.cols{grid-template-columns:1fr}.flow{gap:4px}.arrow{display:none}main{padding:20px 12px}}
+  </style>
+</head>
+<body>
+  <main>
+    <h1>RabbitMQ dans Sillage — mini-laboratoire</h1>
+    <p class="sub">Créez un document, envoyez-le, annulez-le ou supprimez-le. Observez quel message arrive dans quelle file.</p>
+    <div id="etat" class="status">Chargement de la topologie et des messages…</div>
+    <section class="panel">
+      <h2>Parcours du message</h2>
+      <div class="flow"><div class="node">Bouton dans l’interface</div><div class="arrow">→</div><div class="node">Producteur Spring</div><div class="arrow">→</div><div class="node">Topic exchange</div><div class="arrow">→</div><div class="node queue">Queue</div><div class="arrow">→</div><div class="node">@RabbitListener</div></div>
+      <p class="small">Exchange Sillage : <strong>fr.sib.sillage.topic</strong></p>
+      <div class="note">La file <strong>export.mail</strong> reçoit les messages ENVOI et ANNULATION, mais pas CREATE ou DELETE. Une file pédagogique « journal » reçoit tous les événements pour permettre de les comparer. Aucun véritable email n’est expédié.</div>
+    </section>
+    <div class="cols">
+      <section class="panel">
+        <h2>1. Créer un document</h2>
+        <form id="form">
+          <label for="titre">Titre du document</label><input id="titre" value="Compte rendu" required>
+          <label for="destinataire">Destinataire (fictif)</label><input id="destinataire" value="test@example.com">
+          <div class="actions"><button type="submit">Créer le document</button></div>
+        </form>
+        <h2 style="margin-top:28px">2. Agir sur le document</h2>
+        <div id="documents" class="small muted">Aucun document.</div>
+      </section>
+      <section class="panel">
+        <h2>Bindings de la file « export.mail »</h2>
+        <p class="small">La valeur après <code>with(...)</code> est un motif ou une routing key. Cinq bindings sont repris de <code>amqpcore-api</code>.</p>
+        <ul id="bindings" class="bindings"></ul>
+        <div class="actions"><a class="link" href="http://localhost:15672/" target="_blank" rel="noopener noreferrer" style="text-decoration:none">Ouvrir RabbitMQ Management ↗</a></div>
+      </section>
+    </div>
+    <section class="panel">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:10px"><h2>Messages consommés</h2><button class="secondary" type="button" id="actualiser">Actualiser</button></div>
+      <p class="small">Actualisation automatique toutes les 2 secondes. Deux lignes pour un même événement sont normales si deux files le consomment.</p>
+      <div id="messages" class="small muted">Aucun message.</div>
+    </section>
+  </main>
+  <script>
+    const $ = id => document.getElementById(id);
+    const echapper = v => String(v ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+    const api = async (chemin, options={}) => {
+      const reponse = await fetch('/api/' + chemin, {headers:{'Content-Type':'application/json'}, ...options});
+      if (!reponse.ok) {
+        const erreur = await reponse.json().catch(()=>null);
+        throw new Error(erreur?.detail || erreur?.message || reponse.statusText);
+      }
+      return reponse.status === 204 ? null : reponse.json();
+    };
+    const statut = (texte, erreur=false) => { $('etat').textContent=texte; $('etat').style.background=erreur?'#ffedf0':'#eef6ff'; };
+    async function charger(){
+      try {
+        const [docs,msgs,topologie] = await Promise.all([api('documents'),api('messages'),api('topologie')]);
+        $('bindings').innerHTML=topologie.bindingsExportMail.map(b=>'<li>'+echapper(b)+'</li>').join('');
+        $('documents').innerHTML=docs.length?docs.map(d=>`<div class="document"><div><span class="docname">${echapper(d.titre)}</span> <span class="pill">${echapper(d.etat)}</span></div><div class="small">${echapper(d.numero)} · ${echapper(d.destinataire)}</div><div class="actions"><button class="secondary" data-action="envoi" data-numero="${echapper(d.numero)}">Envoyer</button><button class="warning" data-action="annulation" data-numero="${echapper(d.numero)}">Annuler</button><button class="danger" data-action="suppression" data-numero="${echapper(d.numero)}">Supprimer</button></div></div>`).join(''):'Aucun document. Créez-en un pour commencer.';
+        $('messages').innerHTML=msgs.length?msgs.map(m=>`<div class="event"><div class="small">${echapper(new Date(m.date).toLocaleTimeString())} · ${echapper(m.queue)}</div><strong>${echapper(m.routingKey)}</strong><code>${echapper(m.contenu)}</code></div>`).join(''):'Aucun message reçu pour le moment.';
+        if ($('etat').dataset.erreur !== '1') statut('Connecté à l’application Spring Boot. Les messages circulent via RabbitMQ.');
+      } catch(e){ statut('Erreur : '+e.message+'. Vérifiez que Spring Boot et RabbitMQ sont démarrés.',true); }
+    }
+    $('form').addEventListener('submit',async e=>{
+      e.preventDefault();
+      try{await api('documents',{method:'POST',body:JSON.stringify({titre:$('titre').value,destinataire:$('destinataire').value})});$('etat').dataset.erreur='';await charger();}
+      catch(err){statut('Création impossible : '+err.message,true);}
+    });
+    $('documents').addEventListener('click',async e=>{
+      const btn=e.target.closest('button[data-action]');if(!btn)return;
+      const numero=btn.dataset.numero, action=btn.dataset.action;
+      try{
+        if(action==='suppression')await api('documents/'+encodeURIComponent(numero),{method:'DELETE'});
+        else await api('documents/'+encodeURIComponent(numero)+'/'+action,{method:'POST'});
+        $('etat').dataset.erreur='';await charger();
+      }catch(err){statut('Action impossible : '+err.message,true);}
+    });
+    $('actualiser').addEventListener('click',charger);
+    charger();setInterval(charger,2000);
+  </script>
+</body>
+</html>
