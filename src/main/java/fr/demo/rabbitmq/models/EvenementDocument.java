@@ -1,4 +1,4 @@
-package fr.demo.rabbitmq;
+package fr.demo.rabbitmq.models;
 
 import java.time.Instant;
 

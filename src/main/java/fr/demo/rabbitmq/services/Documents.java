@@ -1,5 +1,8 @@
-package fr.demo.rabbitmq;
+package fr.demo.rabbitmq.services;
 
+import fr.demo.rabbitmq.models.DemandeCreation;
+import fr.demo.rabbitmq.models.Document;
+import fr.demo.rabbitmq.config.Routage;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;

@@ -1,4 +1,4 @@
-package fr.demo.rabbitmq;
+package fr.demo.rabbitmq.config;
 
 import org.springframework.amqp.core.BindingBuilder;
 import org.springframework.amqp.core.Declarables;

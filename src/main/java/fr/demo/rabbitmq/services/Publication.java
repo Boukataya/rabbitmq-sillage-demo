@@ -1,7 +1,10 @@
-package fr.demo.rabbitmq;
+package fr.demo.rabbitmq.services;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import fr.demo.rabbitmq.config.Routage;
+import fr.demo.rabbitmq.models.Document;
+import fr.demo.rabbitmq.models.EvenementDocument;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.stereotype.Service;
 

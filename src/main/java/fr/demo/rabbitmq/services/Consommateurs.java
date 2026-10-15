@@ -1,5 +1,6 @@
-package fr.demo.rabbitmq;
+package fr.demo.rabbitmq.services;
 
+import fr.demo.rabbitmq.config.Routage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.amqp.core.Message;

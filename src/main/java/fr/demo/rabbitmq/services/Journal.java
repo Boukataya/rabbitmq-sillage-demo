@@ -1,5 +1,6 @@
-package fr.demo.rabbitmq;
+package fr.demo.rabbitmq.services;
 
+import fr.demo.rabbitmq.models.Reception;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;

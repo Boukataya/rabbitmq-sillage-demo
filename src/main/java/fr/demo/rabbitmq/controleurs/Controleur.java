@@ -1,5 +1,11 @@
-package fr.demo.rabbitmq;
+package fr.demo.rabbitmq.controleurs;
 
+import fr.demo.rabbitmq.config.Routage;
+import fr.demo.rabbitmq.models.DemandeCreation;
+import fr.demo.rabbitmq.models.Document;
+import fr.demo.rabbitmq.models.Reception;
+import fr.demo.rabbitmq.services.Documents;
+import fr.demo.rabbitmq.services.Journal;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;

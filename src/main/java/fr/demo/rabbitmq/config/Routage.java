@@ -1,4 +1,4 @@
-package fr.demo.rabbitmq;
+package fr.demo.rabbitmq.config;
 
 /** Constantes reprises de amqpcore-api (Sillage), avec une queue d'observation supplémentaire. */
 public final class Routage {

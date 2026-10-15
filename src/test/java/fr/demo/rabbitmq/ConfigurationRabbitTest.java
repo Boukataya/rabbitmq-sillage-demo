@@ -1,5 +1,7 @@
 package fr.demo.rabbitmq;
 
+import fr.demo.rabbitmq.config.ConfigurationRabbit;
+import fr.demo.rabbitmq.config.Routage;
 import org.junit.jupiter.api.Test;
 import org.springframework.amqp.core.Binding;
 import org.springframework.amqp.core.Declarables;
